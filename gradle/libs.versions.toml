@@ -1,0 +1,15 @@
+[versions]
+tscfg = "1.0.2"
+
+kotest = "5.8.0"
+mockk = "1.13.7"
+
+[libraries]
+tscfg = { module = "com.github.carueda:tscfg_2.13", version.ref = "tscfg" }
+
+kotestRunner = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
+kotestAssertionsCore = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+
+[bundles]
+test = [ "kotestRunner", "kotestAssertionsCore", "mockk" ]
