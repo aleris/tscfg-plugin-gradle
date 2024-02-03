@@ -12,7 +12,7 @@ class TscfgPlugin : Plugin<Project> {
 
     project.tasks.register("generateTscfg", GenerateTscfgTask::class.java) { task ->
       task.group = "build"
-      task.description = "Generates typesafe configurations and accompanied tsfcg classes from specification files"
+      task.description = "Generates typesafe configurations and java classes from specification files using tscfg"
 
       task.files.set(extension.files)
       task.generateConfigFile.set(extension.generateConfigFile)

@@ -8,6 +8,8 @@ plugins {
   id("com.gradle.plugin-publish") version "1.2.1"
 }
 
+group = "io.github.aleris.plugins"
+
 plugins.withType<JavaPlugin> {
   configure<JavaPluginExtension> {
     withSourcesJar()
@@ -120,7 +122,10 @@ plugins.withType<JavaGradlePluginPlugin> {
 
 gradlePlugin {
   plugins.create("tscfgPlugin") {
-      id = "io.github.aleris.plugins.tscfg"
-      implementationClass = "io.github.aleris.plugins.tscfg.TscfgPlugin"
+    id = "io.github.aleris.plugins.tscfg"
+    displayName = "Tscfg Plugin"
+    description = "Generates typesafe configurations and java classes from specification files using tscfg"
+    tags = listOf("tscfg", "configuration", "typesafe", "HOCON", "java", "code generation")
+    implementationClass = "io.github.aleris.plugins.tscfg.TscfgPlugin"
   }
 }
