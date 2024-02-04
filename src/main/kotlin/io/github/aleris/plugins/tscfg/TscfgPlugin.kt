@@ -6,6 +6,9 @@ import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 
+/**
+ * Plugin that wraps the tscfg code generator for typesafe configuration files and associated POJO like classes.
+ */
 class TscfgPlugin : Plugin<Project> {
   override fun apply(project: Project) {
     val extension = project.extensions.create("tscfg", TscfgExtension::class.java)
@@ -14,7 +17,12 @@ class TscfgPlugin : Plugin<Project> {
       task.group = "build"
       task.description = "Generates typesafe configurations and java classes from specification files using tscfg"
 
-      task.files.set(extension.files)
+      if (extension.files.isNotEmpty()) {
+        task.files.set(extension.files)
+      } else {
+        val defaultConfigFile = project.objects.newInstance(ConfigFile::class.java, "application", extension, project)
+        task.files.add(defaultConfigFile)
+      }
       task.generateConfigFile.set(extension.generateConfigFile)
       task.configFileIndent.set(extension.configFileIndent)
       task.outputInGeneratedResourceSet.set(extension.outputInGeneratedResourceSet)

@@ -24,19 +24,12 @@ class TscfgPluginTest : FunSpec({
     project.extensions.findByName("tscfg") shouldNotBe null
   }
 
-  test("simple kotlin dsl") {
+  test("run build basic config with kotlin dsl") {
     val testProjectDir = tempDir()
 
     testProjectDir.resolve("src/tscfg/application.spec.conf").also {
       it.parentFile.mkdirs()
-      it.writeText("""
-      # Configuration for API calls
-      api {
-        # The URI of the API
-        #@envvar API_URI
-        uri: "string | http://localhost:8080",
-      }
-      """.trimIndent())
+      it.writeText(TestFixture.CONFIG_SPEC)
     }
 
     testProjectDir.resolve("build.gradle.kts").also {
@@ -47,23 +40,22 @@ class TscfgPluginTest : FunSpec({
         }
   
         tscfg {
-          packageName = "io.github.aleris.plugins.tscfg.example"
-          
-          files {
-            register("src/tscfg/application.spec.conf") {
-              outputConfigFileName = "src/main/resources/application.conf"
-            }
-          }
-          
+          packageName = "com.example"          
           generateRecords = true
           addGeneratedAnnotation = true
+          
+          files {
+            register("application") {
+              specFile = file("src/tscfg/application.spec.conf")
+              configFile = file("src/main/resources/application.conf")
+            }
+          }
         }
       """.trimIndent())
     }
 
     val result = build(testProjectDir)
 
-    result.output shouldContain "BUILD SUCCESSFUL"
     result.task(":generateTscfg")?.outcome shouldBe TaskOutcome.SUCCESS
 
     val configFile = testProjectDir.resolve("src/main/resources/application.conf")
@@ -73,26 +65,19 @@ class TscfgPluginTest : FunSpec({
     val root = "build/${TscfgPlugin.GENERATED_SOURCES_ROOT}/java"
 
     val classFile = testProjectDir.resolve(
-      "$root/io/github/aleris/plugins/tscfg/example/ApplicationConfig.java"
+      "$root/com/example/ApplicationConfig.java"
     )
     classFile.exists() shouldBe true
-    classFile.readText() shouldContain "package io.github.aleris.plugins.tscfg.example;"
+    classFile.readText() shouldContain "package com.example;"
     classFile.readText() shouldContain "public record ApplicationConfig("
   }
 
-  test("simple gradle dsl") {
+  test("run build basic config with gradle dsl") {
     val testProjectDir = tempDir()
 
     testProjectDir.resolve("src/tscfg/application.spec.conf").also {
       it.parentFile.mkdirs()
-      it.writeText("""
-      # Configuration for API calls
-      api {
-        # The URI of the API
-        #@envvar API_URI
-        uri: "string | http://localhost:8080",
-      }
-      """.trimIndent())
+      it.writeText(TestFixture.CONFIG_SPEC)
     }
 
     testProjectDir.resolve("build.gradle").also {
@@ -103,23 +88,23 @@ class TscfgPluginTest : FunSpec({
         }
   
         tscfg {
-          packageName = 'io.github.aleris.plugins.tscfg.example'
-          
-          files {
-            'src/tscfg/application.spec.conf' {
-              outputConfigFileName = 'src/main/resources/application.conf'
-            }
-          }
-          
+          packageName = 'com.example'
           generateRecords = true
           addGeneratedAnnotation = true
+          
+          files {
+            'application' {
+              specFile = file('src/tscfg/application.spec.conf')
+              configFile = file('src/main/resources/application.conf')
+            }
+          }          
         }
       """.trimIndent())
     }
 
     val result = build(testProjectDir)
 
-    result.output shouldContain "BUILD SUCCESSFUL"
+    result.task(":generateTscfg")?.outcome shouldBe TaskOutcome.SUCCESS
 
     val firstConfigFile = testProjectDir.resolve("src/main/resources/application.conf")
     firstConfigFile.exists() shouldBe true
@@ -128,49 +113,28 @@ class TscfgPluginTest : FunSpec({
     val root = "build/${TscfgPlugin.GENERATED_SOURCES_ROOT}/java"
 
     val firstClassFile = testProjectDir.resolve(
-      "$root/io/github/aleris/plugins/tscfg/example/ApplicationConfig.java"
+      "$root/com/example/ApplicationConfig.java"
     )
     firstClassFile.exists() shouldBe true
-    firstClassFile.readText() shouldContain "package io.github.aleris.plugins.tscfg.example;"
+    firstClassFile.readText() shouldContain "package com.example;"
     firstClassFile.readText() shouldContain "public record ApplicationConfig("
   }
 
-  test("complex with multiple files and different packages") {
+  test("run build with multiple files and different packages") {
     val testProjectDir = tempDir()
     testProjectDir.resolve("src/tscfg/application.spec.conf").also {
       it.parentFile.mkdirs()
-      it.writeText("""
-      # Configuration for API calls
-      api {
-        # The URI of the API
-        #@envvar API_URI
-        uri: "string | http://localhost:8080",
-      }
-      """.trimIndent())
+      it.writeText(TestFixture.CONFIG_SPEC)
     }
 
     testProjectDir.resolve("src/tscfg/second.spec.conf").also {
       it.parentFile.mkdirs()
-      it.writeText("""
-      # Configuration for API calls
-      api2 {
-        # The URI of the API
-        #@envvar API2_URI2
-        uri2: "string | http://localhost:8080",
-      }
-      """.trimIndent())
+      it.writeText(TestFixture.CONFIG_SPEC)
     }
 
     testProjectDir.resolve("src/tscfg/third.spec.conf").also {
       it.parentFile.mkdirs()
-      it.writeText("""
-      # Configuration for API calls
-      api3 {
-        # The URI of the API
-        #@envvar API3_URI3
-        uri3: "string | http://localhost:8080",
-      }
-      """.trimIndent())
+      it.writeText(TestFixture.CONFIG_SPEC)
     }
 
     testProjectDir.resolve("build.gradle.kts").also {
@@ -181,30 +145,32 @@ class TscfgPluginTest : FunSpec({
         }
   
         tscfg {
-          packageName = "io.github.aleris.plugins.tscfg.example"
+          packageName = "com.example"
+          generateRecords = true
+          addGeneratedAnnotation = true
 
           files {
-            register("src/tscfg/application.spec.conf") {
-              outputConfigFileName = "src/main/resources/application.conf"
+            register("application") {
+              specFile = file("src/tscfg/application.spec.conf")
+              configFile = file("src/main/resources/application.conf")
               className = "FirstConfig"
             }
           
-            register("src/tscfg/second.spec.conf")
+            register("second") {
+              specFile = file("src/tscfg/second.spec.conf")
+            }
             
-            register("src/tscfg/third.spec.conf") {
-              packageName = "io.github.aleris.plugins.tscfg.example.third"
+            register("third") {
+              packageName = "com.example.third"
             }
           }
-
-          generateRecords = true
-          addGeneratedAnnotation = true
         }
       """.trimIndent())
     }
 
     val result = build(testProjectDir)
 
-    result.output shouldContain "BUILD SUCCESSFUL"
+    result.task(":generateTscfg")?.outcome shouldBe TaskOutcome.SUCCESS
 
     val firstConfigFile = testProjectDir.resolve("src/main/resources/application.conf")
     firstConfigFile.exists() shouldBe true
@@ -214,50 +180,43 @@ class TscfgPluginTest : FunSpec({
 
     // first
     val firstClassFile = testProjectDir.resolve(
-      "$root/io/github/aleris/plugins/tscfg/example/FirstConfig.java"
+      "$root/com/example/FirstConfig.java"
     )
     firstClassFile.exists() shouldBe true
-    firstClassFile.readText() shouldContain "package io.github.aleris.plugins.tscfg.example;"
+    firstClassFile.readText() shouldContain "package com.example;"
     firstClassFile.readText() shouldContain "public record FirstConfig("
 
     // second
     val secondConfigFile = testProjectDir.resolve("src/tscfg/second.conf")
     secondConfigFile.exists() shouldBe true
-    secondConfigFile.readText() shouldContain "uri2 = \${?API2_URI2}"
+    secondConfigFile.readText() shouldContain "uri = \${?API_URI}"
 
     val secondClassFile = testProjectDir.resolve(
-      "$root/io/github/aleris/plugins/tscfg/example/SecondConfig.java"
+      "$root/com/example/SecondConfig.java"
     )
     secondClassFile.exists() shouldBe true
-    firstClassFile.readText() shouldContain "package io.github.aleris.plugins.tscfg.example;"
+    firstClassFile.readText() shouldContain "package com.example;"
     secondClassFile.readText() shouldContain "public record SecondConfig("
 
     // third
     val thirdConfigFile = testProjectDir.resolve("src/tscfg/third.conf")
     thirdConfigFile.exists() shouldBe true
-    thirdConfigFile.readText() shouldContain "uri3 = \${?API3_URI3}"
+    thirdConfigFile.readText() shouldContain "uri = \${?API_URI}"
 
     val thirdClassFile = testProjectDir.resolve(
-      "$root/io/github/aleris/plugins/tscfg/example/third/ThirdConfig.java"
+      "$root/com/example/third/ThirdConfig.java"
     )
     thirdClassFile.exists() shouldBe true
-    thirdClassFile.readText() shouldContain "package io.github.aleris.plugins.tscfg.example.third;"
+    thirdClassFile.readText() shouldContain "package com.example.third;"
     thirdClassFile.readText() shouldContain "public record ThirdConfig("
   }
 
-  test("no config file generated") {
+  test("run build without a config file generated") {
     val testProjectDir = tempDir()
 
     testProjectDir.resolve("src/tscfg/application.spec.conf").also {
       it.parentFile.mkdirs()
-      it.writeText("""
-      # Configuration for API calls
-      api {
-        # The URI of the API
-        #@envvar API_URI
-        uri: "string | http://localhost:8080",
-      }
-      """.trimIndent())
+      it.writeText(TestFixture.CONFIG_SPEC)
     }
 
     testProjectDir.resolve("build.gradle.kts").also {
@@ -268,21 +227,14 @@ class TscfgPluginTest : FunSpec({
         }
   
         tscfg {
-          packageName = "io.github.aleris.plugins.tscfg.example"
+          packageName = "com.example"
           generateConfigFile = false
-          
-          files {
-            register("src/tscfg/application.spec.conf") {
-              outputConfigFileName = "src/main/resources/application.conf"
-            }
-          }
         }
       """.trimIndent())
     }
 
     val result = build(testProjectDir)
 
-    result.output shouldContain "BUILD SUCCESSFUL"
     result.task(":generateTscfg")?.outcome shouldBe TaskOutcome.SUCCESS
 
     val configFile = testProjectDir.resolve("src/main/resources/application.conf")
@@ -291,24 +243,17 @@ class TscfgPluginTest : FunSpec({
     val root = "build/${TscfgPlugin.GENERATED_SOURCES_ROOT}/java"
 
     val classFile = testProjectDir.resolve(
-      "$root/io/github/aleris/plugins/tscfg/example/ApplicationConfig.java"
+      "$root/com/example/ApplicationConfig.java"
     )
     classFile.exists() shouldBe true
   }
 
-  test("output in main source set") {
+  test("run build with output class in main source set") {
     val testProjectDir = tempDir()
 
     testProjectDir.resolve("src/tscfg/application.spec.conf").also {
       it.parentFile.mkdirs()
-      it.writeText("""
-      # Configuration for API calls
-      api {
-        # The URI of the API
-        #@envvar API_URI
-        uri: "string | http://localhost:8080",
-      }
-      """.trimIndent())
+      it.writeText(TestFixture.CONFIG_SPEC)
     }
 
     testProjectDir.resolve("build.gradle.kts").also {
@@ -319,25 +264,20 @@ class TscfgPluginTest : FunSpec({
         }
   
         tscfg {
-          packageName = "io.github.aleris.plugins.tscfg.example"
+          packageName = "com.example"
           outputInGeneratedResourceSet = false
-          
-          files {
-            register("src/tscfg/application.spec.conf")
-          }
         }
       """.trimIndent())
     }
 
     val result = build(testProjectDir)
 
-    result.output shouldContain "BUILD SUCCESSFUL"
     result.task(":generateTscfg")?.outcome shouldBe TaskOutcome.SUCCESS
 
     val root = "src/main/java"
 
     val classFile = testProjectDir.resolve(
-      "$root/io/github/aleris/plugins/tscfg/example/ApplicationConfig.java"
+      "$root/com/example/ApplicationConfig.java"
     )
     classFile.exists() shouldBe true
   }

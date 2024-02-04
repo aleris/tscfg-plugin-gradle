@@ -7,7 +7,7 @@ class ConfigWriter(private val configGenerator: ConfigGenerator) {
     val configFile = configSource.configFile
 
     val project = task.project
-    val outFile = project.file(configFile.outputConfigFileName.get())
+    val outFile = configFile.configFile.get().asFile
     outFile.parentFile.mkdirs()
     val outPath = outFile.toPath()
     project.logger.info("Writing config file to $outPath")
