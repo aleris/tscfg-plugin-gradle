@@ -27,8 +27,6 @@ This Gradle plugin wraps the tscfg library to provide a simple way to automatica
 and configuration POJO classes.
 It runs as part of the build process, so the generated files are always up to date.
 
-For the moment, only Java config classes are supported.
-
 
 ## Usage
 
@@ -79,7 +77,7 @@ tscfg {
 }
 ```
 
-The java plugin is required to use the plugin.
+The java plugin is required. For the moment, only Java config classes are supported.
 
 The `src/tscfg/application.spec.conf` spec/template file should contain a 
 [tscfg schema definition](https://github.com/carueda/tscfg/wiki/template-generation), for example:
@@ -93,13 +91,19 @@ api {
 }
 ```
 
-This will generate a `src/main/resources/application.conf` file and a `com.example.ApplicationConfig` class
-in `generated/sources` source set that can be used to load the config.
+Then run task `:generateTscfg`, 
+to generate a `src/main/resources/application.conf` file and a `com.example.ApplicationConfig` class
+in `generated/sources` source set.
+
+The tscfg generated class can be used to load the configuration file:
 
 ```java
-Config config = ConfigFactory.load().resolve();
+// load default application.conf from resources, see Typesafe Config documentation for other options
+Config config = ConfigFactory.load().resolve(); 
+// loads the configuration in the typed tscfg generated class
 ApplicationConfig applicationConfig = new ApplicationConfig(config);
 ```
+
 
 ## Configuration
 
@@ -156,7 +160,7 @@ tscfg {
   // Whether to use `java.time.Duration` for duration fields in the config class.
   // Defaults to `false`.
   useDurations = false
-  
+
   // The configuration files to be processed by the tscfg plugin.
   // Multiple files can be added inside the `tscfg.files` block.
   // If not specified, the default configuration file "src/tscfg/application.spec.conf" will be used.
@@ -184,3 +188,28 @@ tscfg {
   }
 }
 ```
+
+
+## Run on Compile
+
+You can add a task dependency to run `:generateTscfg` task on java compile.
+
+Kotlin DSL:
+
+```kts
+tasks {
+  compileJava {
+    dependsOn("generateTscfg")
+  }
+}
+```
+
+Groovy DSL:
+
+```groovy
+tasks.compileJava {
+  dependsOn 'generateTscfg'
+}
+```
+
+This will ensure that the generated files are always up to date when compiling the project.

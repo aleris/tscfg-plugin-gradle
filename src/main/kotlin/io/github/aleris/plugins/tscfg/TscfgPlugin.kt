@@ -31,15 +31,16 @@ class TscfgPlugin : Plugin<Project> {
       task.generateRecords.set(extension.generateRecords)
       task.useOptionals.set(extension.useOptionals)
       task.useDurations.set(extension.useDurations)
-    }
 
-    project.plugins.withType(JavaPlugin::class.java) {
-      val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
-      val main = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME)
-      main.java.srcDir(project.layout.buildDirectory.dir(GENERATED_SOURCES_ROOT))
-
-      project.tasks.named("compileJava").configure {
-        it.dependsOn("generateTscfg")
+      if (extension.outputInGeneratedResourceSet.get()) {
+        val javaPluginAvailable = project.plugins.findPlugin(JavaPlugin::class.java) != null
+        if (javaPluginAvailable) {
+          val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
+          val main = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+          main.java.srcDir(project.layout.buildDirectory.dir(GENERATED_SOURCES_ROOT))
+        } else {
+          project.logger.warn("Java plugin not applied. tscfg plugin cannot register generated source set.")
+        }
       }
     }
   }

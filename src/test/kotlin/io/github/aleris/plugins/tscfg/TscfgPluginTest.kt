@@ -10,9 +10,9 @@ import org.gradle.testkit.runner.TaskOutcome
 import java.io.File
 
 class TscfgPluginTest : FunSpec({
-  fun build(dir: File) = GradleRunner.create()
+  fun build(dir: File, task: String = "generateTscfg") = GradleRunner.create()
     .withProjectDir(dir)
-    .withArguments("generateTscfg")
+    .withArguments(task)
     .withPluginClasspath()
     .build()
 
@@ -34,10 +34,7 @@ class TscfgPluginTest : FunSpec({
 
     testProjectDir.resolve("build.gradle.kts").also {
       it.writeText("""
-        plugins {
-          id("java")
-          id("io.github.aleris.plugins.tscfg")
-        }
+        $COMMON_BUILD_CONFIG
   
         tscfg {
           packageName = "com.example"          
@@ -82,10 +79,7 @@ class TscfgPluginTest : FunSpec({
 
     testProjectDir.resolve("build.gradle").also {
       it.writeText("""
-        plugins {
-          id 'java'
-          id 'io.github.aleris.plugins.tscfg'
-        }
+        $COMMON_BUILD_CONFIG
   
         tscfg {
           packageName = 'com.example'
@@ -139,10 +133,7 @@ class TscfgPluginTest : FunSpec({
 
     testProjectDir.resolve("build.gradle.kts").also {
       it.writeText("""
-        plugins {
-          id("java")
-          id("io.github.aleris.plugins.tscfg")
-        }
+        $COMMON_BUILD_CONFIG
   
         tscfg {
           packageName = "com.example"
@@ -221,10 +212,7 @@ class TscfgPluginTest : FunSpec({
 
     testProjectDir.resolve("build.gradle.kts").also {
       it.writeText("""
-        plugins {
-          id("java")
-          id("io.github.aleris.plugins.tscfg")
-        }
+        $COMMON_BUILD_CONFIG
   
         tscfg {
           packageName = "com.example"
@@ -258,10 +246,7 @@ class TscfgPluginTest : FunSpec({
 
     testProjectDir.resolve("build.gradle.kts").also {
       it.writeText("""
-        plugins {
-          id("java")
-          id("io.github.aleris.plugins.tscfg")
-        }
+        $COMMON_BUILD_CONFIG
   
         tscfg {
           packageName = "com.example"
@@ -271,7 +256,6 @@ class TscfgPluginTest : FunSpec({
     }
 
     val result = build(testProjectDir)
-
     result.task(":generateTscfg")?.outcome shouldBe TaskOutcome.SUCCESS
 
     val root = "src/main/java"
@@ -281,4 +265,69 @@ class TscfgPluginTest : FunSpec({
     )
     classFile.exists() shouldBe true
   }
-})
+
+  test("compileJava runs generateTscfg if configured as a dependency") {
+    val testProjectDir = tempDir()
+
+    testProjectDir.resolve("src/tscfg/application.spec.conf").also {
+      it.parentFile.mkdirs()
+      it.writeText(TestFixture.CONFIG_SPEC)
+    }
+
+    testProjectDir.resolve("build.gradle.kts").also {
+      it.writeText("""
+        $COMMON_BUILD_CONFIG
+        
+        tasks {
+          compileJava {
+            dependsOn("generateTscfg")
+          }
+        }
+  
+        tscfg {
+          packageName = "com.example"       
+          
+          files {
+            register("application") {
+              specFile = file("src/tscfg/application.spec.conf")
+              configFile = file("src/main/resources/application.conf")
+            }
+          }
+        }
+      """.trimIndent())
+    }
+
+    val result = build(testProjectDir, "compileJava")
+
+    result.task(":compileJava")?.outcome shouldBe TaskOutcome.SUCCESS
+
+    val configFile = testProjectDir.resolve("src/main/resources/application.conf")
+    configFile.exists() shouldBe true
+    configFile.readText() shouldContain "uri = \${?API_URI}"
+
+    val root = "build/${TscfgPlugin.GENERATED_SOURCES_ROOT}/java"
+
+    val classFile = testProjectDir.resolve(
+      "$root/com/example/ApplicationConfig.java"
+    )
+    classFile.exists() shouldBe true
+    classFile.readText() shouldContain "public class ApplicationConfig {"
+  }
+}) {
+  companion object {
+    val COMMON_BUILD_CONFIG = """
+    plugins {
+      id("java")
+      id("io.github.aleris.plugins.tscfg")
+    }
+    
+    repositories {
+        mavenCentral()
+    }
+    
+    dependencies {
+      implementation("com.github.carueda:tscfg_2.13:1.0.2")
+    }
+  """.trimIndent()
+  }
+}
