@@ -30,6 +30,24 @@ It runs as part of the build process, so the generated files are always up to da
 
 ## Usage
 
+Add the plugin to your build script:
+
+Kotlin DSL:
+
+```kts
+plugins {
+  id("io.github.aleris.plugins.tscfg") version "0.4.0"
+}
+```
+
+Groovy DSL:
+
+```groovy
+plugins {
+    id 'io.github.aleris.plugins.tscfg' version '0.4.0'
+}
+```
+
 Basic configuration:
 
 Kotlin DSL:

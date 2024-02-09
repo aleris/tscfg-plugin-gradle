@@ -10,6 +10,8 @@ plugins {
 
 group = "io.github.aleris.plugins"
 
+apply(plugin = "io.github.aleris.plugins.update-readme-version")
+
 plugins.withType<JavaPlugin> {
   configure<JavaPluginExtension> {
     withSourcesJar()
